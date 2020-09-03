@@ -109,7 +109,27 @@ class BlogPostAPITestCase(APITestCase):
         payload     = payload_handler(user_obj)
         token_rsp   = encode_handler(payload)
         self.client.credentials(HTTP_AUTHORIZATION='JWT ' + token_rsp)
-        url     = blog_posts.get_api_url()
-        data    = {"title": "new_title mod", "content": "some more content"}
-        response = self.client.put(url, data, format='json')
+        url         = blog_posts.get_api_url()
+        data        = {"title": "new_title mod", "content": "some more content"}
+        response    = self.client.put(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_login(self):
+        data = {
+            'username': 'testcfeuser',
+            'password': 'somerandompassword'
+        }
+        url = api_reverse("api-login")
+        response = self.client.post(url, data)
+        # print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        token = response.data.get("token")
+        
+        if token is not None:
+            blog_posts  = BlogPost.objects.first()
+            # print(blog_posts.content)
+            url         = blog_posts.get_api_url()
+            data        = {"title": "new_title2", "content": "some more content"}
+            self.client.credentials(HTTP_AUTHORIZATION='JWT ' + token)  # JWT <token>
+            response = self.client.put(url, data, format='json')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
